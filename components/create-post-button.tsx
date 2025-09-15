@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { usePosts } from "@/hooks/use-posts"
+import { usePosts } from "@/contexts/posts-context"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -54,12 +54,12 @@ export function CreatePostButton() {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title">Título editável</Label>
+            <Label htmlFor="title">Título</Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Título editável"
+              placeholder="Digite o título do seu post"
               required
               disabled={isSubmitting}
             />
@@ -70,7 +70,7 @@ export function CreatePostButton() {
               id="content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="(Text Area)"
+              placeholder="Digite o conteúdo do seu post"
               rows={6}
               required
               disabled={isSubmitting}

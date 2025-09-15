@@ -1,9 +1,21 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react"
 import type { PostWithStats } from "@/services/post.service"
 
-export function usePosts() {
+interface PostsContextType {
+  posts: PostWithStats[]
+  isLoading: boolean
+  error: string | null
+  fetchPosts: () => Promise<void>
+  createPost: (title: string, content: string) => Promise<any>
+  updatePost: (id: string, title: string, content: string) => Promise<any>
+  deletePost: (id: string) => Promise<void>
+}
+
+const PostsContext = createContext<PostsContextType | undefined>(undefined)
+
+export function PostsProvider({ children }: { children: ReactNode }) {
   const [posts, setPosts] = useState<PostWithStats[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -93,13 +105,27 @@ export function usePosts() {
     fetchPosts()
   }, [])
 
-  return {
-    posts,
-    isLoading,
-    error,
-    fetchPosts,
-    createPost,
-    updatePost,
-    deletePost,
-  }
+  return (
+    <PostsContext.Provider
+      value={{
+        posts,
+        isLoading,
+        error,
+        fetchPosts,
+        createPost,
+        updatePost,
+        deletePost,
+      }}
+    >
+      {children}
+    </PostsContext.Provider>
+  )
 }
+
+export function usePosts() {
+  const context = useContext(PostsContext)
+  if (context === undefined) {
+    throw new Error("usePosts must be used within a PostsProvider")
+  }
+  return context
+} 

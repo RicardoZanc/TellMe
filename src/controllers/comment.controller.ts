@@ -51,7 +51,11 @@ export class CommentController {
         )
       }
 
-      const comments = await CommentService.findByPostId(postId)
+      // Get user session to pass userId to service
+      const session = await getServerSession(authOptions)
+      const userId = session?.user?.id
+
+      const comments = await CommentService.findByPostId(postId, userId)
       return NextResponse.json({ comments })
     } catch (error) {
       console.error("Get comments by post error:", error)

@@ -50,30 +50,51 @@ export class CommentService {
   }
 
   static async findByPostId(postId: string, userId?: string): Promise<CommentWithStats[]> {
-    const comments = await prisma.comment.findMany({
-      where: {
-        postId,
-        parentCommentId: null, // Only top-level comments
-      },
+    // Get all comments for the post (both top-level and replies)
+    const allComments = await prisma.comment.findMany({
+      where: { postId },
       include: {
         owner: {
           select: { id: true, username: true },
         },
         commentReactions: true,
-        replies: {
-          include: {
-            owner: {
-              select: { id: true, username: true },
-            },
-            commentReactions: true,
-          },
-          orderBy: { createdAt: "asc" },
-        },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: "asc" },
     })
 
-    return comments.map((comment) => this.mapCommentWithStats(comment, userId))
+    // Build hierarchical structure
+    const commentMap = new Map<string, any>()
+    const topLevelComments: any[] = []
+
+    // First pass: create all comments with empty replies array
+    allComments.forEach(comment => {
+      const commentWithStats = {
+        ...comment,
+        replies: []
+      }
+      commentMap.set(comment.id, commentWithStats)
+    })
+
+    // Second pass: organize into hierarchy
+    allComments.forEach(comment => {
+      const commentWithStats = commentMap.get(comment.id)!
+      
+      if (comment.parentCommentId) {
+        // This is a reply, add it to parent's replies
+        const parent = commentMap.get(comment.parentCommentId)
+        if (parent) {
+          parent.replies.push(commentWithStats)
+        }
+      } else {
+        // This is a top-level comment
+        topLevelComments.push(commentWithStats)
+      }
+    })
+
+    // Sort top-level comments by creation date (newest first)
+    topLevelComments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+    return topLevelComments.map((comment) => this.mapCommentWithStats(comment, userId))
   }
 
   private static mapCommentWithStats(comment: any, userId?: string): CommentWithStats {

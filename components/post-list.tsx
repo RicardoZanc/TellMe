@@ -1,6 +1,6 @@
 "use client"
 
-import { usePosts } from "@/hooks/use-posts"
+import { usePosts } from "@/contexts/posts-context"
 import { PostCard } from "@/components/post-card"
 
 export function PostList() {
