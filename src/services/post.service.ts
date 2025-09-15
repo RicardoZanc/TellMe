@@ -29,7 +29,6 @@ export interface PostWithStats extends Post {
 }
 
 export class PostService {
-  // Factory pattern for creating posts with default values
   static async create(postData: CreatePostData): Promise<Post> {
     return prisma.post.create({
       data: {
@@ -38,7 +37,7 @@ export class PostService {
         owner: {
           connect: { id: postData.ownerId },
         },
-        views: 0, // Default value
+        views: 0, 
       },
     })
   }
