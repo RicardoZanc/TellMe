@@ -1,22 +1,25 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
-import { usePosts } from "@/contexts/posts-context"
+import type { PostWithStats } from "@/services/post.service"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, X } from "lucide-react"
+import { X } from "lucide-react"
 
-export function CreatePostButton() {
-  const [isOpen, setIsOpen] = useState(false)
-  const [title, setTitle] = useState("")
-  const [content, setContent] = useState("")
+interface EditPostDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  post: PostWithStats
+  onSuccess: (updatedPost: PostWithStats) => void
+}
+
+export function EditPostDialog({ open, onOpenChange, post, onSuccess }: EditPostDialogProps) {
+  const [title, setTitle] = useState(post.title)
+  const [content, setContent] = useState(post.content)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { createPost } = usePosts()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -24,39 +27,56 @@ export function CreatePostButton() {
 
     setIsSubmitting(true)
     try {
-      await createPost(title.trim(), content.trim())
-      setTitle("")
-      setContent("")
-      setIsOpen(false)
+      const response = await fetch(`/api/posts/${post.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          content: content.trim(),
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to update post")
+      }
+
+      const { post: updatedPost } = await response.json()
+      
+      // Create updated post with stats
+      const updatedPostWithStats: PostWithStats = {
+        ...post,
+        ...updatedPost,
+        title: updatedPost.title,
+        content: updatedPost.content,
+      }
+      
+      onSuccess(updatedPostWithStats)
     } catch (error) {
-      console.error("Create post error:", error)
+      console.error("Update post error:", error)
     } finally {
       setIsSubmitting(false)
     }
   }
 
   const handleCancel = () => {
-    setTitle("")
-    setContent("")
-    setIsOpen(false)
+    setTitle(post.title)
+    setContent(post.content)
+    onOpenChange(false)
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg" size="icon">
-          <Plus className="h-6 w-6" />
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Criação/edição de post</DialogTitle>
+          <DialogTitle>Editar post</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title">Título</Label>
+            <Label htmlFor="edit-title">Título</Label>
             <Input
-              id="title"
+              id="edit-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Digite o título do seu post"
@@ -65,9 +85,9 @@ export function CreatePostButton() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="content">Conteúdo</Label>
+            <Label htmlFor="edit-content">Conteúdo</Label>
             <Textarea
-              id="content"
+              id="edit-content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Digite o conteúdo do seu post"
@@ -82,11 +102,11 @@ export function CreatePostButton() {
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Postando..." : "Postar"}
+              {isSubmitting ? "Salvando..." : "Salvar alterações"}
             </Button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
   )
-}
+} 
