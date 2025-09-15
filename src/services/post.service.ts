@@ -54,6 +54,36 @@ export class PostService {
     })
   }
 
+  static async findByIdWithStats(id: string, userId?: string): Promise<PostWithStats | null> {
+    const post = await prisma.post.findUnique({
+      where: { id },
+      include: {
+        owner: {
+          select: { id: true, username: true },
+        },
+        _count: {
+          select: {
+            comments: true,
+            postReactions: true,
+          },
+        },
+        postReactions: true,
+      },
+    })
+
+    if (!post) return null
+
+    const likes = post.postReactions.filter((r) => r.type === "LIKE").length
+    const dislikes = post.postReactions.filter((r) => r.type === "DISLIKE").length
+    const userReaction = userId ? post.postReactions.find((r) => r.userId === userId)?.type || null : null
+
+    return {
+      ...post,
+      reactions: { likes, dislikes },
+      userReaction,
+    }
+  }
+
   static async findAll(userId?: string): Promise<PostWithStats[]> {
     const posts = await prisma.post.findMany({
       include: {

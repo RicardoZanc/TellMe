@@ -6,7 +6,7 @@ import type { ReactionType } from "@prisma/client"
 export function useReactions() {
   const [isLoading, setIsLoading] = useState(false)
 
-  const addPostReaction = async (postId: string, type: ReactionType) => {
+  const togglePostReaction = async (postId: string, type: ReactionType) => {
     setIsLoading(true)
     try {
       const response = await fetch(`/api/posts/${postId}/reactions`, {
@@ -19,25 +19,7 @@ export function useReactions() {
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.error || "Failed to add reaction")
-      }
-
-      return await response.json()
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const removePostReaction = async (postId: string) => {
-    setIsLoading(true)
-    try {
-      const response = await fetch(`/api/posts/${postId}/reactions`, {
-        method: "DELETE",
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to remove reaction")
+        throw new Error(error.error || "Failed to toggle reaction")
       }
 
       return await response.json()
@@ -88,8 +70,7 @@ export function useReactions() {
 
   return {
     isLoading,
-    addPostReaction,
-    removePostReaction,
+    togglePostReaction,
     addCommentReaction,
     removeCommentReaction,
   }

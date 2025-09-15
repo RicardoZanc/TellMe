@@ -2,37 +2,33 @@
 
 import { useState } from "react"
 import type { CommentWithStats } from "@/services/comment.service"
-import { useReactions } from "@/hooks/use-reactions"
+import { useCommentReactions } from "@/hooks/use-comment-reactions"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ThumbsUp, ThumbsDown, Reply, User } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { CommentForm } from "./comment-form"
 
 interface CommentCardProps {
   comment: CommentWithStats
   isReply?: boolean
+  onReply?: (parentId: string, content: string) => Promise<void>
 }
 
-export function CommentCard({ comment, isReply = false }: CommentCardProps) {
-  const { addCommentReaction, removeCommentReaction } = useReactions()
-  const [isReacting, setIsReacting] = useState(false)
+export function CommentCard({ comment, isReply = false, onReply }: CommentCardProps) {
+  const { currentComment, handleReaction, isLoading } = useCommentReactions(comment)
+  const [showReplyForm, setShowReplyForm] = useState(false)
 
-  const handleReaction = async (type: "LIKE" | "DISLIKE") => {
-    if (isReacting) return
 
-    setIsReacting(true)
+
+  const handleReply = async (content: string) => {
+    if (!onReply) return
     try {
-      if (comment.userReaction === type) {
-        await removeCommentReaction(comment.id)
-      } else {
-        await addCommentReaction(comment.id, type)
-      }
-      // Note: In a real app, you'd want to refresh the comments here
+      await onReply(currentComment.id, content)
+      setShowReplyForm(false)
     } catch (error) {
-      console.error("Reaction error:", error)
-    } finally {
-      setIsReacting(false)
+      console.error("Reply error:", error)
     }
   }
 
@@ -48,49 +44,67 @@ export function CommentCard({ comment, isReply = false }: CommentCardProps) {
             </Avatar>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <p className="text-sm font-medium">{comment.owner.username}</p>
-                <p className="text-xs text-gray-500">{new Date(comment.createdAt).toLocaleDateString("pt-BR")}</p>
+                <p className="text-sm font-medium">{currentComment.owner.username}</p>
+                <p className="text-xs text-gray-500">{new Date(currentComment.createdAt).toLocaleDateString("pt-BR")}</p>
               </div>
-              <p className="text-sm mb-3">{comment.content}</p>
+              <p className="text-sm mb-3">{currentComment.content}</p>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-end justify-end gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => handleReaction("LIKE")}
-                  disabled={isReacting}
-                  className={cn("gap-1 h-8 px-2", comment.userReaction === "LIKE" && "text-blue-600 bg-blue-50")}
+                  disabled={isLoading}
+                  className={cn("gap-1 h-8 px-2", currentComment.userReaction === "LIKE" && "text-blue-600 bg-blue-50")}
                 >
                   <ThumbsUp className="h-3 w-3" />
-                  {comment.reactions.likes}
+                  {currentComment.reactions.likes}
                 </Button>
 
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => handleReaction("DISLIKE")}
-                  disabled={isReacting}
-                  className={cn("gap-1 h-8 px-2", comment.userReaction === "DISLIKE" && "text-red-600 bg-red-50")}
+                  disabled={isLoading}
+                  className={cn("gap-1 h-8 px-2", currentComment.userReaction === "DISLIKE" && "text-red-600 bg-red-50")}
                 >
                   <ThumbsDown className="h-3 w-3" />
-                  {comment.reactions.dislikes}
+                  {currentComment.reactions.dislikes}
                 </Button>
 
-                <Button variant="ghost" size="sm" className="gap-1 h-8 px-2">
-                  <Reply className="h-3 w-3" />
-                  Responder
-                </Button>
+                {onReply && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="gap-1 h-8 px-2"
+                    onClick={() => setShowReplyForm(!showReplyForm)}
+                  >
+                    <Reply className="h-3 w-3" />
+                    Responder
+                  </Button>
+                )}
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
+      {/* Reply form */}
+      {showReplyForm && (
+        <div className="ml-8">
+          <CommentForm 
+            onSubmit={handleReply}
+            onCancel={() => setShowReplyForm(false)}
+            placeholder="Escreva uma resposta..."
+          />
+        </div>
+      )}
+
       {/* Render replies */}
-      {comment.replies && comment.replies.length > 0 && (
+      {currentComment.replies && currentComment.replies.length > 0 && (
         <div className="space-y-2">
-          {comment.replies.map((reply) => (
-            <CommentCard key={reply.id} comment={reply} isReply />
+          {currentComment.replies.map((reply) => (
+            <CommentCard key={reply.id} comment={reply} isReply onReply={onReply} />
           ))}
         </div>
       )}

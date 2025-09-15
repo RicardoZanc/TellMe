@@ -6,9 +6,10 @@ import { CommentCard } from "@/components/comment-card"
 interface CommentListProps {
   comments: CommentWithStats[]
   isLoading: boolean
+  onReply?: (parentId: string, content: string) => Promise<void>
 }
 
-export function CommentList({ comments, isLoading }: CommentListProps) {
+export function CommentList({ comments, isLoading, onReply }: CommentListProps) {
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -26,7 +27,7 @@ export function CommentList({ comments, isLoading }: CommentListProps) {
   return (
     <div className="space-y-4">
       {comments.map((comment) => (
-        <CommentCard key={comment.id} comment={comment} />
+        <CommentCard key={comment.id} comment={comment} onReply={onReply} />
       ))}
     </div>
   )

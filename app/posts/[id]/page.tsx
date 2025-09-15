@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useParams } from "next/navigation"
 import { usePost } from "@/hooks/use-post"
 import { useComments } from "@/hooks/use-comments"
@@ -13,6 +14,16 @@ export default function PostPage() {
   const postId = params.id as string
   const { post, isLoading: postLoading } = usePost(postId)
   const { comments, isLoading: commentsLoading, createComment } = useComments(postId)
+  const [showCommentForm, setShowCommentForm] = useState(false)
+
+  const handleReply = async (parentId: string, content: string) => {
+    await createComment(content, parentId)
+  }
+
+  const handleCreateComment = async (content: string) => {
+    await createComment(content)
+    setShowCommentForm(false) // Hide form after submitting
+  }
 
   if (postLoading) {
     return (
@@ -45,9 +56,18 @@ export default function PostPage() {
       <Header />
       <main className="container mx-auto px-4 py-6">
         <div className="max-w-2xl mx-auto space-y-6">
-          <PostDetail post={post} />
-          <CommentForm onSubmit={createComment} />
-          <CommentList comments={comments} isLoading={commentsLoading} />
+          <PostDetail 
+            post={post} 
+            onShowComments={() => setShowCommentForm(!showCommentForm)}
+            showingComments={showCommentForm}
+          />
+          {showCommentForm && (
+            <CommentForm 
+              onSubmit={handleCreateComment} 
+              onCancel={() => setShowCommentForm(false)}
+            />
+          )}
+          <CommentList comments={comments} isLoading={commentsLoading} onReply={handleReply} />
         </div>
       </main>
     </div>

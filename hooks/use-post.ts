@@ -1,10 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import type { Post } from "@prisma/client"
+import type { PostWithStats } from "@/services/post.service"
 
 export function usePost(id: string) {
-  const [post, setPost] = useState<Post | null>(null)
+  const [post, setPost] = useState<PostWithStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 

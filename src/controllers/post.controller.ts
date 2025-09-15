@@ -60,7 +60,11 @@ export class PostController {
         )
       }
 
-      const post = await PostService.findById(id)
+      const session = await getAuthSession()
+      const userId = session?.user?.id
+
+      const post = await PostService.findByIdWithStats(id, userId)
+      
       if (!post) {
         return NextResponse.json(
           { error: "Post not found" }, 

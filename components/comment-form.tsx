@@ -9,11 +9,12 @@ import { Card, CardContent } from "@/components/ui/card"
 
 interface CommentFormProps {
   onSubmit: (content: string, parentCommentId?: string) => Promise<void>
+  onCancel?: () => void
   parentCommentId?: string
   placeholder?: string
 }
 
-export function CommentForm({ onSubmit, parentCommentId, placeholder = "Escreva um comentário..." }: CommentFormProps) {
+export function CommentForm({ onSubmit, onCancel, parentCommentId, placeholder = "Escreva um comentário..." }: CommentFormProps) {
   const [content, setContent] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -43,7 +44,12 @@ export function CommentForm({ onSubmit, parentCommentId, placeholder = "Escreva 
             rows={3}
             disabled={isSubmitting}
           />
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            {onCancel && (
+              <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+                Cancelar
+              </Button>
+            )}
             <Button type="submit" disabled={isSubmitting || !content.trim()}>
               {isSubmitting ? "Enviando..." : "Comentar"}
             </Button>

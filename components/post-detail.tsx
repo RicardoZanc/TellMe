@@ -1,21 +1,22 @@
 "use client"
 
-import type { Post } from "@prisma/client"
+import type { PostWithStats } from "@/services/post.service"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { User, Eye, Edit, Trash2 } from "lucide-react"
+import { User, Edit, Trash2, ThumbsUp, ThumbsDown, MessageCircle, ChartNoAxesColumn } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { usePostReactions } from "@/hooks/use-post-reactions"
+import { cn } from "@/lib/utils"
 
 interface PostDetailProps {
-  post: Post & {
-    owner: {
-      id: string
-      username: string
-    }
-  }
+  post: PostWithStats
+  onShowComments: () => void
+  showingComments: boolean
 }
 
-export function PostDetail({ post }: PostDetailProps) {
+export function PostDetail({ post, onShowComments, showingComments }: PostDetailProps) {
+  const { currentPost, handleReaction, isLoading } = usePostReactions(post)
+
   return (
     <Card>
       <CardHeader>
@@ -27,15 +28,11 @@ export function PostDetail({ post }: PostDetailProps) {
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="text-sm font-medium">{post.owner.username}</p>
-              <p className="text-xs text-gray-500">{new Date(post.createdAt).toLocaleDateString("pt-BR")}</p>
+              <p className="text-sm font-medium">{currentPost.owner.username}</p>
+              <p className="text-xs text-gray-500">{new Date(currentPost.createdAt).toLocaleDateString("pt-BR")}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 text-xs text-gray-500">
-              <Eye className="h-3 w-3" />
-              {post.views}
-            </div>
             <Button variant="ghost" size="sm">
               <Edit className="h-4 w-4" />
             </Button>
@@ -46,9 +43,48 @@ export function PostDetail({ post }: PostDetailProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <h1 className="text-2xl font-bold mb-4">{post.title}</h1>
-        <div className="prose max-w-none">
-          <p className="whitespace-pre-wrap">{post.content}</p>
+        <h1 className="text-2xl font-bold mb-4">{currentPost.title}</h1>
+        <div className="prose max-w-none mb-6">
+          <p className="whitespace-pre-wrap">{currentPost.content}</p>
+        </div>
+        
+        {/* Reaction and Comment Counts */}
+        <div className="flex items-center justify-between text-sm border-t pt-4">
+          <div className="flex items-center gap-1 text-gray-600">
+            <ChartNoAxesColumn className="h-4 w-4" />
+            <span>{currentPost.views}</span>
+          </div>
+          <div className="flex items-center gap-6">
+            <button
+              onClick={onShowComments}
+              className={`flex items-center gap-1 hover:text-blue-600 transition-colors ${
+                showingComments ? 'text-blue-600' : 'text-gray-600'
+              }`}
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span>{currentPost._count?.comments || 0}</span>
+            </button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleReaction("LIKE")}
+              disabled={isLoading}
+              className={cn("gap-1", currentPost.userReaction === "LIKE" && "text-blue-600 bg-blue-50")}
+            >
+              <ThumbsUp className="h-4 w-4" />
+              <span>{currentPost.reactions?.likes || 0}</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleReaction("DISLIKE")}
+              disabled={isLoading}
+              className={cn("gap-1", currentPost.userReaction === "DISLIKE" && "text-red-600 bg-red-50")}
+            >
+              <ThumbsDown className="h-4 w-4" />
+              <span>{currentPost.reactions?.dislikes || 0}</span>
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
